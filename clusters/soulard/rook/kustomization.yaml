@@ -4,3 +4,5 @@ resources:
 - namespace.yaml
 - helmrepo.yaml
 - helmrelease.yaml
+- cephcluster.yaml
+- cephtools.yaml

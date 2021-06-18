@@ -1,0 +1,40 @@
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: ceph
+  namespace: rook-ceph
+spec:
+  dataDirHostPath: /var/lib/rook
+  cephVersion:
+    image: ceph/ceph:v16.2.4
+  mon:
+    count: 3
+    allowMultiplePerNode: false
+  dashboard:
+    enabled: true
+  placement:
+    mon:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+  crashCollector:
+    disable: true
+  storage:
+    useAllNodes: false
+    useAllDevices: false
+    config:
+      encryptedDevice: "true"
+    nodes:
+      - name: singapore
+        devices:
+          - name: /dev/disk/by-path/pci-0000:02:00.0-sas-phy4-lun-0
+          - name: /dev/disk/by-path/pci-0000:02:00.0-sas-phy5-lun-0
+          - name: /dev/disk/by-path/pci-0000:02:00.0-sas-phy6-lun-0
+          - name: /dev/disk/by-path/pci-0000:02:00.0-sas-phy7-lun-0
+      - name: leith
+        devices:
+          - name: /dev/disk/by-path/pci-0000:01:00.0-nvme-1
+            config:
+              osdsPerDevice: "3"
+              deviceClass: nvme
