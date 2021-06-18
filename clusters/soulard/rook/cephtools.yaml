@@ -52,3 +52,10 @@ spec:
           operator: "Exists"
           effect: "NoExecute"
           tolerationSeconds: 5
+# To get ceph healthy on less than three nodes:
+# POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-tools -o name | awk -F '/' '{ print $NF }')
+# kubectl -n rook-ceph exec -it ${POD} -- bash -c "ceph osd getcrushmap | crushtool -d - > /tmp/crush.map"
+# kubectl -n rook-ceph exec -it ${POD} -- bash -c 'sed -i "s/step chooseleaf firstn 0 type host/step chooseleaf firstn 0 type osd/g" /tmp/crush.map'
+# kubectl -n rook-ceph exec -it ${POD} -- bash -c 'crushtool -c /tmp/crush.map -o /tmp/crush.map.compiled'
+# kubectl -n rook-ceph exec -it ${POD} -- bash -c 'ceph osd setcrushmap -i /tmp/crush.map.compiled'
+# kubectl -n rook-ceph exec -it ${POD} -- bash -c "rm -v /tmp/crush.map"
