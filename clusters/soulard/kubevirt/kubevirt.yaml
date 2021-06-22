@@ -1,0 +1,17 @@
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  annotations:
+  finalizers:
+  - foregroundDeleteKubeVirt
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  certificateRotateStrategy: {}
+  configuration:
+    developerConfiguration:
+      featureGates:
+       - CPUManager
+  customizeComponents: {}
+  imagePullPolicy: IfNotPresent
+  workloadUpdateStrategy: {}
