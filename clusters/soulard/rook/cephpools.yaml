@@ -13,6 +13,17 @@ spec:
 apiVersion: ceph.rook.io/v1
 kind: CephBlockPool
 metadata:
+  name: ecpool-metadata
+  namespace: rook-ceph
+spec:
+  failureDomain: osd
+  replicated:
+    size: 2
+  deviceClass: ssd
+---
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
   name: replicapool
   namespace: rook-ceph
 spec:

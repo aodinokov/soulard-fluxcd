@@ -1,0 +1,31 @@
+#https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/blob/master/deployments/configMap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sriovdp-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+        "resourceList": [{
+                "resourceName": "intel_sriov_netdevice",
+                "selectors": {
+                    "vendors": ["8086"],
+                    "devices": ["1520"],
+                    "drivers": ["vfio-pci"],
+                }
+            },
+            {
+                "resourceName": "intel_sriov_dpdk",
+                "selectors": {
+                    "vendors": ["8086"],
+                    "devices": ["1520"],
+                    "drivers": ["igbvf"]
+                }
+            }
+        ]
+    }
+# vf_netdev_driver="igbvf"
+# for device in $(driverctl list-devices | awk "/${vf_netdev_driver}/ { print \$1 }"); do
+#     driverctl set-override ${device} vfio-pci
+# done

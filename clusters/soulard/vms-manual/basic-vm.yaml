@@ -1,0 +1,72 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachineInstance
+metadata:
+  name: testvmi-nocloud
+spec:
+  terminationGracePeriodSeconds: 30
+  hostname: "myvmi"
+  subdomain: "mysubdomain"
+  domain:
+    clock:
+      utc: {}
+      timer:
+        kvm: {}
+    cpu:
+      model: host-passthrough
+      sockets: 2
+      cores: 1
+      threads: 1
+      dedicatedCpuPlacement: true
+      isolateEmulatorThread: true
+    # firmware:
+    #   bootloader:
+    #     efi:
+    #       secureBoot: false
+    resources:
+      limits:
+        memory: 2Gi
+    memory:
+      hugepages:
+        pageSize: "1Gi"
+    devices:
+      autoattachGraphicsDevice: false
+      disks:
+        - name: bootdisk
+          disk:
+            bus: virtio
+        - name: emptydisk
+          disk:
+            bus: virtio
+        - disk:
+            bus: virtio
+          name: cloudinitdisk
+      interfaces:
+        - name: default
+          bridge: {}
+          ports:
+            - name: ssh
+              port: 22
+        - name: sriov-net
+          sriov: {}
+  networks:
+    - name: default
+      pod: {}
+    - name: sriov-net
+      multus:
+        networkName: sriov-default
+  volumes:
+  - name: bootdisk
+    containerDisk:
+      image: kubevirt/fedora-cloud-container-disk-demo:latest
+  # - name: bootdisk
+  #   dataVolume:
+  #     name: registry-image-datavolume
+  - name: emptydisk
+    emptyDisk:
+      capacity: "2Gi"
+  - name: cloudinitdisk
+    cloudInitNoCloud:
+      userData: |-
+        #cloud-config
+        password: fedora
+        chpasswd: { expire: False }

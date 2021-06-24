@@ -1,0 +1,928 @@
+# harbor@leith:~/Development/github.com/metal-stack/csi-driver-lvm$ helm install mytest helm/csi-driver-lvm --set lvm.devicePattern='/dev/disk/by-uuid/726e6fef-5916-40fa-9e2a-f2ac69d2fabb'  --debug --dry-run
+# WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /home/harbor/.kube/config
+# WARNING: Kubernetes configuration file is world-readable. This is insecure. Location: /home/harbor/.kube/config
+# install.go:173: [debug] Original chart version: ""
+# install.go:190: [debug] CHART PATH: /home/harbor/Development/github.com/metal-stack/csi-driver-lvm/helm/csi-driver-lvm
+
+# W0624 16:05:26.885231 1339680 warnings.go:70] policy/v1beta1 PodSecurityPolicy is deprecated in v1.21+, unavailable in v1.25+
+# W0624 16:05:26.938724 1339680 warnings.go:70] rbac.authorization.k8s.io/v1beta1 RoleBinding is deprecated in v1.17+, unavailable in v1.22+; use rbac.authorization.k8s.io/v1 RoleBinding
+# W0624 16:05:26.956425 1339680 warnings.go:70] storage.k8s.io/v1beta1 CSIDriver is deprecated in v1.19+, unavailable in v1.22+; use storage.k8s.io/v1 CSIDriver
+# NAME: mytest
+# LAST DEPLOYED: Thu Jun 24 16:05:26 2021
+# NAMESPACE: default
+# STATUS: pending-install
+# REVISION: 1
+# TEST SUITE: None
+# USER-SUPPLIED VALUES:
+# lvm:
+#   devicePattern: /dev/disk/by-uuid/726e6fef-5916-40fa-9e2a-f2ac69d2fabb
+
+# COMPUTED VALUES:
+# kubernetes:
+#   kubeletPath: /var/lib/kubelet
+# lvm:
+#   devicePattern: /dev/disk/by-uuid/726e6fef-5916-40fa-9e2a-f2ac69d2fabb
+#   driverName: lvm.csi.metal-stack.io
+#   storageClassStub: csi-lvm
+#   vgName: csi-lvm
+# pluginImage:
+#   pullPolicy: IfNotPresent
+#   repository: metalstack/lvmplugin
+#   tag: v0.4.1
+# provisionerImage:
+#   pullPolicy: IfNotPresent
+#   repository: metalstack/csi-lvmplugin-provisioner
+#   tag: v0.4.1
+# rbac:
+#   create: true
+#   pspEnabled: true
+
+# HOOKS:
+# MANIFEST:
+---
+# Source: csi-driver-lvm/templates/psp.yaml
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: psp-lvm-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+spec:
+  allowPrivilegeEscalation: true
+  fsGroup:
+    rule: RunAsAny
+  privileged: true
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - '*'
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-lvmplugin
+  labels:
+    heritage: Helm
+    release: mytest
+---
+# Source: csi-driver-lvm/templates/external-attacher-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-attacher
+  labels:
+    heritage: Helm
+    release: mytest
+---
+# Source: csi-driver-lvm/templates/external-provisioner-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-provisioner
+  labels:
+    heritage: Helm
+    release: mytest
+---
+# Source: csi-driver-lvm/templates/external-resizer-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-resizer
+  labels:
+    heritage: Helm
+    release: mytest
+---
+# Source: csi-driver-lvm/templates/csi-storageclass-linear.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-lvm-sc-linear
+  labels:
+    heritage: Helm
+    release: mytest
+provisioner: lvm.csi.metal-stack.io
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+parameters:
+  type: "linear"
+---
+# Source: csi-driver-lvm/templates/csi-storageclass-mirror.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-lvm-sc-mirror
+  labels:
+    heritage: Helm
+    release: mytest
+provisioner: lvm.csi.metal-stack.io
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+parameters:
+  type: mirror
+---
+# Source: csi-driver-lvm/templates/csi-storageclass-striped.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-lvm-sc-striped
+  labels:
+    heritage: Helm
+    release: mytest
+provisioner: lvm.csi.metal-stack.io
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+parameters:
+  type: "striped"
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-lvmplugin-runner-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+---
+# Source: csi-driver-lvm/templates/external-attacher-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-attacher-runner-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+---
+# Source: csi-driver-lvm/templates/external-provisioner-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-provisioner-runner-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["get", "list"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: csi-driver-lvm/templates/external-resizer-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-resizer-runner-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-lvmplugin-role-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-lvmplugin
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: external-lvmplugin-runner-mytest
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/external-attacher-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-attacher-role-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-attacher
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: external-attacher-runner-mytest
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/external-provisioner-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-provisioner-role-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-provisioner
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: external-provisioner-runner-mytest
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/external-resizer-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-resizer-role-mytest
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-resizer
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: external-resizer-runner-mytest
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-lvmplugin-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-lvmplugin
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list", "create", "delete"]
+---
+# Source: csi-driver-lvm/templates/external-attacher-rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-attacher-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
+---
+# Source: csi-driver-lvm/templates/external-provisioner-rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-provisioner-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
+---
+# Source: csi-driver-lvm/templates/external-resizer-rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-resizer-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
+---
+# Source: csi-driver-lvm/templates/psp.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: psp-lvm-role
+  labels:
+    heritage: Helm
+    release: mytest
+rules:
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - psp-lvm-mytest
+  verbs:
+  - use
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-lvmplugin-role-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-lvmplugin
+    namespace: default
+roleRef:
+  kind: Role
+  name: external-lvmplugin-cfg
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-lvmplugin-role
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-lvmplugin
+    namespace: default
+roleRef:
+  kind: Role
+  name: csi-lvmplugin
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/external-attacher-rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-attacher-role-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-attacher
+    namespace: default
+roleRef:
+  kind: Role
+  name: external-attacher-cfg
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/external-provisioner-rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-provisioner-role-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-provisioner
+    namespace: default
+roleRef:
+  kind: Role
+  name: external-provisioner-cfg
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/external-resizer-rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-resizer-role-cfg
+  labels:
+    heritage: Helm
+    release: mytest
+subjects:
+  - kind: ServiceAccount
+    name: csi-resizer
+    namespace: default
+roleRef:
+  kind: Role
+  name: external-resizer-cfg
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: csi-driver-lvm/templates/psp.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: psp-rolebinding-lvm
+  labels:
+    heritage: Helm
+    release: mytest
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: psp-lvm-role
+subjects:
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvm-attacher
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvm
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvm-provisioner
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvm-resizer
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvm-snapshotter
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvm-socat
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-attacher
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-provisioner
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-resizer
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-snapshotter
+- apiGroup: ""
+  kind: ServiceAccount
+  name: csi-lvmplugin
+---
+# Source: csi-driver-lvm/templates/csi-lvm-attacher.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-lvm-attacher
+  labels:
+    app: csi-lvm-attacher
+    heritage: Helm
+    release: mytest
+spec:
+  selector:
+    app: csi-lvm-attacher
+  ports:
+    - name: dummy
+      port: 12345
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-deployment.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-lvmplugin
+  labels:
+    app: csi-lvmplugin
+    heritage: Helm
+    release: mytest
+spec:
+  selector:
+    app: csi-lvmplugin
+  ports:
+    - name: dummy
+      port: 12345
+---
+# Source: csi-driver-lvm/templates/csi-lvm-provisioner.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-lvm-provisioner 
+  labels:
+    app: csi-lvm-provisioner
+    heritage: Helm
+    release: mytest
+spec:
+  selector:
+    app: csi-lvm-provisioner 
+  ports:
+    - name: dummy
+      port: 12345
+---
+# Source: csi-driver-lvm/templates/csi-lvm-resizer.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-lvm-resizer
+  labels:
+    app: csi-lvm-resizer
+    heritage: Helm
+    release: mytest
+spec:
+  selector:
+    app: csi-lvm-resizer
+  ports:
+    - name: dummy
+      port: 12345
+---
+# Source: csi-driver-lvm/templates/csi-lvm-plugin-deployment.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: csi-lvmplugin
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: csi-lvmplugin
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: csi-lvmplugin
+    spec:
+      serviceAccountName: csi-lvmplugin
+      containers:
+      - args:
+        - --v=5
+        - --csi-address=/csi/csi.sock
+        - --kubelet-registration-path=/var/lib/kubelet/plugins/csi-lvm/csi.sock
+        env:
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v1.3.0
+        imagePullPolicy: IfNotPresent
+        name: node-driver-registrar
+        resources: {}
+        securityContext:
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /registration
+          name: registration-dir
+      - args:
+        - --drivername=lvm.csi.metal-stack.io
+        - --endpoint=$(CSI_ENDPOINT)
+        - --devices=$(CSI_DEVICESPATTERN)
+        - --nodeid=$(KUBE_NODE_NAME)
+        - --vgname=$(CSI_VGNAME)
+        - --namespace=$(CSI_NAMESPACE)
+        - --provisionerimage=$(CSI_PROVISIONER_IMAGE)
+        - --pullpolicy=$(CSI_PULL_POLICY)
+        env:
+        - name: CSI_ENDPOINT
+          value: unix:///csi/csi.sock
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: CSI_DEVICESPATTERN
+          value: /dev/disk/by-uuid/726e6fef-5916-40fa-9e2a-f2ac69d2fabb
+        - name: CSI_VGNAME
+          value: csi-lvm
+        - name: CSI_NAMESPACE
+          value: default
+        - name: CSI_PROVISIONER_IMAGE
+          value: "metalstack/csi-lvmplugin-provisioner:v0.4.1"
+        - name: CSI_PULL_POLICY
+          value: IfNotPresent
+        image: "metalstack/lvmplugin:v0.4.1"
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: healthz
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 3
+        name: lvm
+        ports:
+        - containerPort: 9898
+          name: healthz
+          protocol: TCP
+        resources: {}
+        securityContext:
+          privileged: true
+        terminationMessagePath: /termination.log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /var/lib/kubelet/pods
+          mountPropagation: Bidirectional
+          name: mountpoint-dir
+        - mountPath: /var/lib/kubelet/plugins
+          mountPropagation: Bidirectional
+          name: plugins-dir
+        - mountPath: /dev
+          name: dev-dir
+          mountPropagation: Bidirectional
+        - mountPath: /lib/modules
+          name: mod-dir
+        - mountPath: /etc/lvm/backup
+          name: lvmbackup
+          mountPropagation: Bidirectional
+        - mountPath: /etc/lvm/cache
+          name: lvmcache
+          mountPropagation: Bidirectional
+        - mountPath: /run/lock/lvm
+          name: lvmlock
+          mountPropagation: Bidirectional
+      - args:
+        - --csi-address=/csi/csi.sock
+        - --health-port=9898
+        image: k8s.gcr.io/sig-storage/livenessprobe:v2.2.0
+        imagePullPolicy: IfNotPresent
+        name: liveness-probe
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - hostPath:
+          path: /var/lib/kubelet/plugins/csi-lvm
+          type: DirectoryOrCreate
+        name: socket-dir
+      - hostPath:
+          path: /var/lib/kubelet/pods
+          type: DirectoryOrCreate
+        name: mountpoint-dir
+      - hostPath:
+          path: /var/lib/kubelet/plugins_registry
+          type: Directory
+        name: registration-dir
+      - hostPath:
+          path: /var/lib/kubelet/plugins
+          type: Directory
+        name: plugins-dir
+      - hostPath:
+          path: /dev
+          type: Directory
+        name: dev-dir
+      - hostPath:
+          path: /lib/modules
+        name: mod-dir
+      - hostPath:
+          path: /etc/lvm/backup
+          type: DirectoryOrCreate
+        name: lvmbackup
+      - hostPath:
+          path: /etc/lvm/cache
+          type: DirectoryOrCreate
+        name: lvmcache
+      - hostPath:
+          path: /run/lock/lvm
+          type: DirectoryOrCreate
+        name: lvmlock
+---
+# Source: csi-driver-lvm/templates/csi-lvm-attacher.yaml
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-lvm-attacher
+  labels:
+    heritage: Helm
+    release: mytest
+spec:
+  serviceName: "csi-lvm-attacher"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-lvm-attacher
+  template:
+    metadata:
+      labels:
+        app: csi-lvm-attacher
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - csi-lvmplugin
+            topologyKey: kubernetes.io/hostname
+      serviceAccountName: csi-attacher
+      containers:
+        - name: csi-attacher
+          image: k8s.gcr.io/sig-storage/csi-attacher:v2.2.1
+          args:
+            - --v=5
+            - --csi-address=/csi/csi.sock
+          securityContext:
+            # This is necessary only for systems with SELinux, where
+            # non-privileged sidecar containers cannot access unix domain socket
+            # created by privileged CSI driver container.
+            privileged: true
+          volumeMounts:
+          - mountPath: /csi
+            name: socket-dir
+
+      volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins/csi-lvm
+            type: DirectoryOrCreate
+          name: socket-dir
+---
+# Source: csi-driver-lvm/templates/csi-lvm-provisioner.yaml
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-lvm-provisioner
+  labels:
+    heritage: Helm
+    release: mytest
+spec:
+  serviceName: "csi-lvm-provisioner"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-lvm-provisioner
+  template:
+    metadata:
+      labels:
+        app: csi-lvm-provisioner
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - csi-lvmplugin
+            topologyKey: kubernetes.io/hostname
+      serviceAccountName: csi-provisioner
+      containers:
+        - name: csi-provisioner
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v1.6.1
+          args:
+            - -v=5
+            - --csi-address=/csi/csi.sock
+            - --feature-gates=Topology=true
+          securityContext:
+            # This is necessary only for systems with SELinux, where
+            # non-privileged sidecar containers cannot access unix domain socket
+            # created by privileged CSI driver container.
+            privileged: true
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+      volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins/csi-lvm
+            type: DirectoryOrCreate
+          name: socket-dir
+---
+# Source: csi-driver-lvm/templates/csi-lvm-resizer.yaml
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-lvm-resizer
+  labels:
+    heritage: Helm
+    release: mytest
+spec:
+  serviceName: "csi-lvm-resizer"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-lvm-resizer
+  template:
+    metadata:
+      labels:
+        app: csi-lvm-resizer
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - csi-lvmplugin
+            topologyKey: kubernetes.io/hostname
+      serviceAccountName: csi-resizer
+      containers:
+        - name: csi-resizer
+          image: k8s.gcr.io/sig-storage/csi-resizer:v0.5.0
+          args:
+            - -v=5
+            - -csi-address=/csi/csi.sock
+          securityContext:
+            # This is necessary only for systems with SELinux, where
+            # non-privileged sidecar containers cannot access unix domain socket
+            # created by privileged CSI driver container.
+            privileged: true
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+      volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins/csi-lvm
+            type: DirectoryOrCreate
+          name: socket-dir
+---
+# Source: csi-driver-lvm/templates/csi-lvm-driverinfo.yaml
+apiVersion: storage.k8s.io/v1beta1
+kind: CSIDriver
+metadata:
+  name: lvm.csi.metal-stack.io
+  labels:
+    heritage: Helm
+    release: mytest
+spec:
+  # Supports persistent and ephemeral inline volumes.
+  volumeLifecycleModes:
+  - Persistent
+  - Ephemeral
+  # To determine at runtime which mode a volume uses, pod info and its
+  # "csi.storage.k8s.io/ephemeral" entry are needed.
+  podInfoOnMount: true
+

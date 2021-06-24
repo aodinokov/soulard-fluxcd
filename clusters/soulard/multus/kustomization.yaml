@@ -2,3 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.7.1/images/multus-daemonset.yml
+  - macvlan-default.yaml
+
+  - https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-cni/master/images/k8s-v1.16/sriov-cni-daemonset.yaml
+  - sriov-configmap.yaml
+  - https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-network-device-plugin/master/deployments/k8s-v1.16/sriovdp-daemonset.yaml

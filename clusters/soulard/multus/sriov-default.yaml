@@ -1,0 +1,37 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-default
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: intel.com/intel_sriov_netdevice
+spec:
+  config: '{
+      "type": "sriov",
+      "cniVersion": "0.3.1",
+      "name": "sriov-network",
+      "ipam": {
+          "type": "dhcp"
+      }
+    }'
+
+
+
+# cat <<EOF | kubectl apply -f -
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: samplepod-sriov2
+#   annotations:
+#     k8s.v1.cni.cncf.io/networks: sriov-default
+# spec:
+#   containers:
+#   - name: samplepod
+#     command: ["/bin/ash", "-c", "trap : TERM INT; sleep infinity & wait"]
+#     image: alpine
+#     resources:
+#       requests:
+#         intel.com/intel_sriov_netdevice: '1'
+#       limits:
+#         intel.com/intel_sriov_netdevice: '1'
+# ---
+# EOF
