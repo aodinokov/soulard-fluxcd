@@ -12,6 +12,7 @@ spec:
     developerConfiguration:
       featureGates:
        - CPUManager
+       - DataVolumes
   customizeComponents: {}
   imagePullPolicy: IfNotPresent
   workloadUpdateStrategy: {}

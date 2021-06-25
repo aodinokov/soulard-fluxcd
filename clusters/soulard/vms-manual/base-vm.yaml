@@ -1,0 +1,96 @@
+# node1 should be replaced by instance uuid
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  labels:
+    kubevirt.io/vm: vm-glomar
+  name: vm-glomar
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: vm-glomar
+    spec:
+      domain:
+        clock:
+          utc: {}
+          timer:
+            kvm: {}
+        cpu:
+          model: host-passthrough
+          sockets: 2
+          cores: 1
+          threads: 1
+          dedicatedCpuPlacement: true
+          isolateEmulatorThread: true
+        # firmware:
+        #   bootloader:
+        #     efi:
+        #       secureBoot: false
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        memory:
+          hugepages:
+            pageSize: "1Gi"
+        devices:
+          autoattachGraphicsDevice: false
+          disks:
+            - name: boot-disk
+              disk:
+                bus: virtio
+            - name: cloud-init-disk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              bridge: {}
+              ports:
+                - name: ssh
+                  port: 22
+            - name: sriov-net
+              sriov: {}
+      volumes:
+        - name: boot-disk
+          dataVolume:
+            name: boot-disk-node1
+        - name: cloud-init-disk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              password: password1
+              chpasswd: { expire: False }
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp6s0:
+                  dhcp4: true
+      networks:
+        - name: default
+          pod: {}
+        - name: sriov-net
+          multus:
+            networkName: sriov-default
+  dataVolumeTemplates:
+    - metadata:
+        name: boot-disk-node1
+      spec:
+        pvc:
+          volumeMode: Block
+          storageClassName: csi-lvm-sc-linear
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+        source:
+          # registry:
+          #   url: "docker://kubevirt/fedora-cloud-registry-disk-demo"
+          http:
+            #url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64-disk-kvm.img
+            url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img

@@ -19,6 +19,9 @@ spec:
       dedicatedCpuPlacement: true
       isolateEmulatorThread: true
     # firmware:
+    #   kernelBoot:
+    #     kernelArgs: systemd.cpu_affinity="0,1"
+    #     #BOOT_IMAGE=/boot/vmlinuz-4.13.9-300.fc27.x86_64 root=UUID=d020d197-657b-4030-bde5-0db8417bc39c ro no_timer_check console=tty1 console=ttyS0,115200n8 LANG=en_US.UTF-8
     #   bootloader:
     #     efi:
     #       secureBoot: false
@@ -37,9 +40,9 @@ spec:
         - name: emptydisk
           disk:
             bus: virtio
-        - disk:
+        - name: cloudinitdisk
+          disk:
             bus: virtio
-          name: cloudinitdisk
       interfaces:
         - name: default
           bridge: {}
@@ -55,18 +58,15 @@ spec:
       multus:
         networkName: sriov-default
   volumes:
-  - name: bootdisk
-    containerDisk:
-      image: kubevirt/fedora-cloud-container-disk-demo:latest
-  # - name: bootdisk
-  #   dataVolume:
-  #     name: registry-image-datavolume
-  - name: emptydisk
-    emptyDisk:
-      capacity: "2Gi"
-  - name: cloudinitdisk
-    cloudInitNoCloud:
-      userData: |-
-        #cloud-config
-        password: fedora
-        chpasswd: { expire: False }
+    - name: bootdisk
+      dataVolume:
+        name: registry-image-datavolume-lvm
+    - name: emptydisk
+      emptyDisk:
+        capacity: "2Gi"
+    - name: cloudinitdisk
+      cloudInitNoCloud:
+        userData: |-
+          #cloud-config
+          password: fedora
+          chpasswd: { expire: False }
