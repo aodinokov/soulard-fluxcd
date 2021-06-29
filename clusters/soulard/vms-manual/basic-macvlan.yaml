@@ -1,7 +1,7 @@
 apiVersion: kubevirt.io/v1alpha3
 kind: VirtualMachineInstance
 metadata:
-  name: testvmi-nocloud
+  name: testvmi-macvlan
 spec:
   terminationGracePeriodSeconds: 30
   hostname: "myvmi"
@@ -13,18 +13,11 @@ spec:
         kvm: {}
     cpu:
       model: host-passthrough
-      sockets: 2
-      cores: 1
+      sockets: 1
+      cores: 2
       threads: 1
       dedicatedCpuPlacement: true
       isolateEmulatorThread: true
-    # firmware:
-    #   kernelBoot:
-    #     kernelArgs: systemd.cpu_affinity="0,1"
-    #     #BOOT_IMAGE=/boot/vmlinuz-4.13.9-300.fc27.x86_64 root=UUID=d020d197-657b-4030-bde5-0db8417bc39c ro no_timer_check console=tty1 console=ttyS0,115200n8 LANG=en_US.UTF-8
-    #   bootloader:
-    #     efi:
-    #       secureBoot: false
     resources:
       limits:
         memory: 2Gi
@@ -46,23 +39,23 @@ spec:
       interfaces:
         - name: default
           bridge: {}
+          pciAddress: "0000:09:00.0"
           ports:
             - name: ssh
               port: 22
-        - name: sriov-net
-          sriov: {}
+        - name: test1
+          bridge: {}
+          pciAddress: "0000:0a:00.0"
   networks:
     - name: default
       pod: {}
-    - name: sriov-net
+    - name: test1
       multus:
-        networkName: sriov-default
+        networkName: macvlan-default
   volumes:
     - name: bootdisk
       containerDisk:
-        image: kubevirt/fedora-cloud-container-disk-demo:latest
-      # dataVolume:
-      #   name: registry-image-datavolume-lvm
+        image: quay.io/port/kubevirt-images:ubuntu-focal-perms
     - name: emptydisk
       emptyDisk:
         capacity: "2Gi"
@@ -70,5 +63,12 @@ spec:
       cloudInitNoCloud:
         userData: |-
           #cloud-config
-          password: fedora
+          password: password1
           chpasswd: { expire: False }
+        networkData: |-
+          version: 2
+          ethernets:
+            enp9s0:
+              dhcp4: true
+            enp10s0:
+              dhcp4: true
