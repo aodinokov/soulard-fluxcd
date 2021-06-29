@@ -11,7 +11,18 @@ spec:
     metadata:
       labels:
         kubevirt.io/vm: vm-glomar
+        azorian.io/cluster: clementine
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: azorian.io/cluster
+                    operator: In
+                    values:
+                      - clementine
+              topologyKey: kubernetes.io/hostname
       domain:
         clock:
           utc: {}
@@ -19,25 +30,26 @@ spec:
             kvm: {}
         cpu:
           model: host-passthrough
-          sockets: 2
-          cores: 1
+          sockets: 1
+          cores: 8
           threads: 1
           dedicatedCpuPlacement: true
           isolateEmulatorThread: true
-        # firmware:
-        #   bootloader:
-        #     efi:
-        #       secureBoot: false
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: false
         resources:
           requests:
-            memory: 2Gi
+            memory: 128Gi
           limits:
-            memory: 2Gi
+            memory: 128Gi
         memory:
           hugepages:
             pageSize: "1Gi"
         devices:
           autoattachGraphicsDevice: false
+          networkInterfaceMultiqueue: true
           disks:
             - name: boot-disk
               disk:
@@ -48,11 +60,13 @@ spec:
           interfaces:
             - name: default
               bridge: {}
+              pciAddress: "0000:09:00.0"
               ports:
                 - name: ssh
                   port: 22
             - name: sriov-net
               sriov: {}
+              pciAddress: "0000:0a:00.0"
       volumes:
         - name: boot-disk
           dataVolume:
@@ -66,9 +80,9 @@ spec:
             networkData: |-
               version: 2
               ethernets:
-                enp1s0:
+                enp9s0:
                   dhcp4: true
-                enp6s0:
+                enp10s0:
                   dhcp4: true
       networks:
         - name: default
@@ -89,8 +103,7 @@ spec:
             requests:
               storage: 5Gi
         source:
-          # registry:
-          #   url: "docker://kubevirt/fedora-cloud-registry-disk-demo"
-          http:
-            #url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64-disk-kvm.img
-            url: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+          registry:
+            url: "docker://quay.io/port/kubevirt-images:ubuntu-focal"
+# FROM scratch
+# ADD --chown=107:107 https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img /disk/
