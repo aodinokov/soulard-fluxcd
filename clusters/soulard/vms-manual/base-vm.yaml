@@ -1,4 +1,29 @@
-# node1 should be replaced by instance uuid
+# vm-glomar should be replaced by instance uuid
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vm-glomar-cloudinit-userdata
+type: Opaque
+stringData:
+  userdata: |
+    #cloud-config
+    password: password1
+    chpasswd: { expire: False }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vm-glomar-cloudinit-networkdata
+type: Opaque
+stringData:
+  networkdata: |
+    version: 2
+    ethernets:
+      enp9s0:
+        dhcp4: true
+      enp10s0:
+        dhcp4: true
+---
 apiVersion: kubevirt.io/v1alpha3
 kind: VirtualMachine
 metadata:
@@ -54,9 +79,12 @@ spec:
             - name: boot-disk
               disk:
                 bus: virtio
+                pciAddress: "0000:03:00.0"
             - name: cloud-init-disk
               disk:
                 bus: virtio
+                pciAddress: "0000:04:00.0"
+                readonly: true
           interfaces:
             - name: default
               bridge: {}
@@ -73,17 +101,10 @@ spec:
             name: boot-disk-node1
         - name: cloud-init-disk
           cloudInitNoCloud:
-            userData: |-
-              #cloud-config
-              password: password1
-              chpasswd: { expire: False }
-            networkData: |-
-              version: 2
-              ethernets:
-                enp9s0:
-                  dhcp4: true
-                enp10s0:
-                  dhcp4: true
+            secretRef:
+              name: vm-glomar-cloudinit-userdata
+            networkDataSecretRef:
+              name: vm-glomar-cloudinit-networkdata
       networks:
         - name: default
           pod: {}
