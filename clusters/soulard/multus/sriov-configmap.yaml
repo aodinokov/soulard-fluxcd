@@ -13,6 +13,7 @@ data:
                     "vendors": ["8086"],
                     "devices": ["1520"],
                     "drivers": ["vfio-pci"],
+                    "pfNames": ["ens2f0","ens2f1","ens2f2","ens3f0","ens3f1","ens3f2"]
                 }
             },
             {
@@ -29,3 +30,12 @@ data:
 # for device in $(driverctl list-devices | awk "/${vf_netdev_driver}/ { print \$1 }"); do
 #     driverctl set-override ${device} vfio-pci
 # done
+
+
+# lspci -DD|grep I350
+# echo 0000:42:00.3 > /sys/bus/pci/drivers/igb/unbind
+# echo 0000:05:00.3 > /sys/bus/pci/drivers/igb/unbind
+# echo "vfio-pci" > /sys/bus/pci/devices/0000\:05\:00.3/driver_override
+# echo "vfio-pci" > /sys/bus/pci/devices/0000\:42\:00.3/driver_override
+# echo 0000:05:00.3 > /sys/bus/pci/drivers/vfio-pci/bind
+# echo 0000:42:00.3 > /sys/bus/pci/drivers/vfio-pci/bind
