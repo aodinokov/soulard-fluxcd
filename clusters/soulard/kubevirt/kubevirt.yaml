@@ -16,13 +16,6 @@ spec:
       - HostDevices
     permittedHostDevices:
       pciHostDevices:
-      - pciVendorSelector: 8086:1521
-        resourceName: intel.com/i350
-       - CPUManager
-       - DataVolumes
-       - HostDevices
-    permittedHostDevices:
-      pciHostDevices:
         - pciVendorSelector: "8086:1521"
           resourceName: "intel.com/i350"
   customizeComponents: {}
